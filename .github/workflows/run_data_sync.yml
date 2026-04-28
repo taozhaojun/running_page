@@ -298,6 +298,7 @@ jobs:
     if: needs.sync.result == 'success' && needs.sync.outputs.BUILD_GH_PAGES == 'true'
     name: Build and publish Github Pages
     permissions:
+      contents: read
       pages: write
       id-token: write
     uses: ./.github/workflows/gh-pages.yml
