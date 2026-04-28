@@ -334,6 +334,9 @@ const getActivitySport = (act: Activity): string => {
 };
 
 const titleForRun = (run: Activity): string => {
+  const isRunningActivity = run.type === 'Run' || run.type === 'running';
+  const activitySport = getActivitySport(run);
+
   if (RICH_TITLE) {
     // 1. try to use user defined name
     if (run.name != '') {
@@ -341,11 +344,15 @@ const titleForRun = (run: Activity): string => {
     }
     // 2. try to use location+type if the location is available, eg. 'Shanghai Run'
     const { city } = locationForRun(run);
-    const activity_sport = getActivitySport(run);
-    if (city && city.length > 0 && activity_sport.length > 0) {
-      return `${city} ${activity_sport}`;
+    if (city && city.length > 0 && activitySport.length > 0) {
+      return `${city} ${activitySport}`;
     }
   }
+
+  if (!isRunningActivity) {
+    return activitySport;
+  }
+
   // 3. use time+length if location or type is not available
   const runDistance = run.distance / 1000;
   const runHour = +run.start_date_local.slice(11, 13);
