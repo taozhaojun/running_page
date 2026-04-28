@@ -11,7 +11,7 @@ def run_strava_sync(
     client_secret,
     refresh_token,
     sync_types: list = [],
-    only_run=True,
+    only_run=False,
 ):
     generator = Generator(SQL_FILE)
     generator.set_strava_config(client_id, client_secret, refresh_token)
