@@ -1,4 +1,12 @@
-import { useEffect, useState, useMemo, useCallback, useRef } from 'react';
+import {
+  lazy,
+  Suspense,
+  useEffect,
+  useState,
+  useMemo,
+  useCallback,
+  useRef,
+} from 'react';
 import { Analytics } from '@vercel/analytics/react';
 import { Helmet } from 'react-helmet-async';
 import Layout from '@/components/Layout';
@@ -11,6 +19,8 @@ import useActivities from '@/hooks/useActivities';
 import useSiteMetadata from '@/hooks/useSiteMetadata';
 import { useInterval } from '@/hooks/useInterval';
 import { IS_CHINESE } from '@/utils/const';
+import { yearStats, githubYearStats } from '@assets/index';
+import { loadSvgComponent } from '@/utils/svgUtils';
 import {
   Activity,
   IViewState,
@@ -387,6 +397,20 @@ const Index = () => {
   }, [year]);
 
   const { theme } = useTheme();
+  const DetailYearSVG = useMemo(
+    () =>
+      year === 'Total'
+        ? null
+        : lazy(() => loadSvgComponent(yearStats, `./year_${year}.svg`)),
+    [year]
+  );
+  const DetailGithubYearSVG = useMemo(
+    () =>
+      year === 'Total'
+        ? null
+        : lazy(() => loadSvgComponent(githubYearStats, `./github_${year}.svg`)),
+    [year]
+  );
 
   return (
     <Layout>
@@ -420,13 +444,23 @@ const Index = () => {
         {year === 'Total' ? (
           <SVGStat />
         ) : (
-          <RunTable
-            runs={runs}
-            locateActivity={locateActivity}
-            setActivity={setActivity}
-            runIndex={runIndex}
-            setRunIndex={setRunIndex}
-          />
+          <>
+            <RunTable
+              runs={runs}
+              locateActivity={locateActivity}
+              setActivity={setActivity}
+              runIndex={runIndex}
+              setRunIndex={setRunIndex}
+            />
+            {DetailYearSVG && DetailGithubYearSVG && (
+              <section className="my-6">
+                <Suspense fallback="loading...">
+                  <DetailYearSVG className="year-svg my-4 h-4/6 w-4/6 border-0 p-0" />
+                  <DetailGithubYearSVG className="github-year-svg my-4 h-auto w-full border-0 p-0" />
+                </Suspense>
+              </section>
+            )}
+          </>
         )}
       </div>
       {/* Enable Audiences in Vercel Analytics: https://vercel.com/docs/concepts/analytics/audiences/quickstart */}
