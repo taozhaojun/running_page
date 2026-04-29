@@ -329,7 +329,7 @@ const ActivityCard = React.memo(ActivityCardInner, activityCardAreEqual);
 
 const ActivityList: React.FC = () => {
   const [interval, setInterval] = useState<IntervalType>('month');
-  const [sportType, setSportType] = useState<string>('all');
+  const [sportType, setSportType] = useState<string>('running');
   const [sportTypeOptions, setSportTypeOptions] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<string | null>(null);
 
@@ -406,6 +406,10 @@ const ActivityList: React.FC = () => {
     const uniqueSportTypes = [...sportTypeSet];
     uniqueSportTypes.unshift('all');
     setSportTypeOptions(uniqueSportTypes);
+    // Keep summary focused on running by default if available.
+    if (!uniqueSportTypes.includes('running')) {
+      setSportType('all');
+    }
   }, []);
 
   // 添加useEffect监听interval变化
