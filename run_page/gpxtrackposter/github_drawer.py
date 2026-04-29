@@ -157,9 +157,12 @@ class GithubDrawer(TracksDrawer):
                         distance1 = self.poster.special_distance["special_distance"]
                         distance2 = self.poster.special_distance["special_distance2"]
                         has_special = distance1 < self.poster.m2u(length) < distance2
-                        color = self.color(
-                            self.poster.length_range_by_date, length, has_special
-                        )
+                        if has_special:
+                            color = self.poster.colors.get("special")
+                        else:
+                            color = self.color(
+                                self.poster.length_range_by_date, length, False
+                            )
                         if self.poster.m2u(length) >= distance2:
                             color = self.poster.colors.get(
                                 "special2"
