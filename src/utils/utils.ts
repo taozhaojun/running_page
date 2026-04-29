@@ -273,7 +273,10 @@ const colorForRun = (run: Activity): string => {
 
 const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => ({
   type: 'FeatureCollection',
-  features: runs.map((run) => {
+  // Safety filter: map should visualize running routes only.
+  features: runs
+    .filter((run) => run.type === 'Run' || run.type === 'running')
+    .map((run) => {
     const points = pathForRun(run);
     const color = colorForRun(run);
     return {
@@ -286,8 +289,8 @@ const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => ({
         type: 'LineString',
         coordinates: points,
       },
-    };
-  }),
+      };
+    }),
 });
 
 const geoJsonForMap = async (): Promise<FeatureCollection<RPGeometry>> => {

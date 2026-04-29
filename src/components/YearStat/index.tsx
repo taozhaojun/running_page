@@ -27,6 +27,8 @@ const YearStat = ({
   if (years.includes(year)) {
     runs = runs.filter((run) => run.start_date_local.slice(0, 4) === year);
   }
+  // Keep yearly stat cards focused on running only.
+  runs = runs.filter((run) => run.type === 'Run' || run.type === 'running');
   let sumDistance = 0;
   let streak = 0;
   let sumElevationGain = 0;
