@@ -95,11 +95,15 @@ const Index = () => {
 
   // Memoize expensive calculations
   const runs = useMemo(() => {
-    return filterAndSortRuns(
+    const filtered = filterAndSortRuns(
       activities,
       currentFilter.item,
       currentFilter.func,
       sortDateFunc
+    );
+    // Keep homepage map/table focused on running only.
+    return filtered.filter(
+      (run) => run.type === 'Run' || run.type === 'running'
     );
   }, [activities, currentFilter.item, currentFilter.func]);
 
