@@ -278,11 +278,20 @@ jobs:
       - name: Push new runs
         if: env.SAVE_DATA_IN_GITHUB_CACHE != 'true'
         run: |
+          set -euo pipefail
           git config --local user.email 'action@github.com'
           git config --local user.name 'GitHub Action'
           git add .
-          git commit -m 'update new runs' || echo 'nothing to commit'
-          git push || echo 'nothing to push'
+          echo '=== git status (staged/unstaged) ==='
+          git status --short
+          if git diff --cached --quiet; then
+            echo 'nothing to commit'
+            exit 0
+          fi
+          git commit -m 'update new runs'
+          echo '=== latest commit ==='
+          git log -1 --oneline
+          git push
 
       - name: Set Output
         id: set_output
