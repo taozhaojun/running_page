@@ -91,7 +91,9 @@ class GithubDrawer(TracksDrawer):
             if str(year_length) == "0.0":
                 continue
             try:
-                month_constants = [getattr(locale, f"MON_{i}", None) for i in range(1, 13)]
+                month_constants = [
+                    getattr(locale, f"MON_{i}", None) for i in range(1, 13)
+                ]
                 if all(month_constants):
                     month_names = [
                         locale.nl_langinfo(day)[:3] for day in month_constants
