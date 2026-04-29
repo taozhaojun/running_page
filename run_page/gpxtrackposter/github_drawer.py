@@ -91,40 +91,16 @@ class GithubDrawer(TracksDrawer):
             if str(year_length) == "0.0":
                 continue
             try:
-                month_names = [
-                    locale.nl_langinfo(day)[:3]  # Get only first three letters
-                    for day in [
-                        locale.MON_1,
-                        locale.MON_2,
-                        locale.MON_3,
-                        locale.MON_4,
-                        locale.MON_5,
-                        locale.MON_6,
-                        locale.MON_7,
-                        locale.MON_8,
-                        locale.MON_9,
-                        locale.MON_10,
-                        locale.MON_11,
-                        locale.MON_12,
+                month_constants = [getattr(locale, f"MON_{i}", None) for i in range(1, 13)]
+                if all(month_constants):
+                    month_names = [
+                        locale.nl_langinfo(day)[:3] for day in month_constants
                     ]
-                ]
-                # support windows or others doesn't support locale Name, by Hard code
-            except Exception as e:
-                print(str(e))
-                month_names = [
-                    "Jan",
-                    "Feb",
-                    "Mar",
-                    "Apr",
-                    "May",
-                    "Jun",
-                    "Jul",
-                    "Aug",
-                    "Sep",
-                    "Oct",
-                    "Nov",
-                    "Dec",
-                ]
+                else:
+                    # Windows often doesn't expose locale.MON_1...MON_12.
+                    month_names = [calendar.month_abbr[i] for i in range(1, 13)]
+            except Exception:
+                month_names = [calendar.month_abbr[i] for i in range(1, 13)]
             dr.add(
                 dr.text(
                     f"{year}",
