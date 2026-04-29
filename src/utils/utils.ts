@@ -277,18 +277,18 @@ const geoJsonForRuns = (runs: Activity[]): FeatureCollection<LineString> => ({
   features: runs
     .filter((run) => run.type === 'Run' || run.type === 'running')
     .map((run) => {
-    const points = pathForRun(run);
-    const color = colorForRun(run);
-    return {
-      type: 'Feature',
-      properties: {
-        color: color,
-        indoor: run.subtype === 'indoor' || run.subtype === 'treadmill',
-      },
-      geometry: {
-        type: 'LineString',
-        coordinates: points,
-      },
+      const points = pathForRun(run);
+      const color = colorForRun(run);
+      return {
+        type: 'Feature',
+        properties: {
+          color: color,
+          indoor: run.subtype === 'indoor' || run.subtype === 'treadmill',
+        },
+        geometry: {
+          type: 'LineString',
+          coordinates: points,
+        },
       };
     }),
 });
