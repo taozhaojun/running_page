@@ -10,7 +10,6 @@ sys.path.insert(0, str(Path(__file__).resolve().parent / "run_page"))
 from generator import Generator  # noqa: E402
 from generator.db import Activity  # noqa: E402
 
-
 UTC = datetime.timezone.utc
 
 
