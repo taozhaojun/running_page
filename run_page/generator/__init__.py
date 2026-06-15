@@ -15,6 +15,15 @@ from synced_data_file_logger import save_synced_data_file_list
 from .db import Activity, init_db, update_or_create_activity
 
 IGNORE_BEFORE_SAVING = os.getenv("IGNORE_BEFORE_SAVING", False)
+STRAVA_DUPLICATE_TIME_WINDOW = datetime.timedelta(
+    minutes=float(os.getenv("STRAVA_DUPLICATE_TIME_WINDOW_MINUTES", "5"))
+)
+STRAVA_DUPLICATE_DISTANCE_METERS = float(
+    os.getenv("STRAVA_DUPLICATE_DISTANCE_METERS", "150")
+)
+STRAVA_DUPLICATE_DISTANCE_RATIO = float(
+    os.getenv("STRAVA_DUPLICATE_DISTANCE_RATIO", "0.02")
+)
 
 
 # Bounding box spread threshold (degrees) for indoor activity detection.
@@ -41,6 +50,59 @@ def _haversine(lat1, lon1, lat2, lon2):
 def _interpolate(p1, p2, frac):
     """Linearly interpolate between two (lat, lng) points."""
     return (p1[0] + (p2[0] - p1[0]) * frac, p1[1] + (p2[1] - p1[1]) * frac)
+
+
+def _activity_start_date(value):
+    if value is None:
+        return None
+    if isinstance(value, datetime.datetime):
+        parsed = value
+    else:
+        try:
+            parsed = datetime.datetime.fromisoformat(str(value))
+        except ValueError:
+            try:
+                parsed = arrow.get(value).datetime
+            except Exception:
+                return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=datetime.timezone.utc)
+    return parsed.astimezone(datetime.timezone.utc)
+
+
+def _activity_distance(value):
+    if value is None:
+        return None
+    if hasattr(value, "num"):
+        value = value.num
+    elif hasattr(value, "magnitude"):
+        value = value.magnitude
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _is_file_imported_activity(activity):
+    start_date = _activity_start_date(activity.start_date)
+    if start_date is None:
+        return False
+    try:
+        run_id = int(activity.run_id)
+    except (TypeError, ValueError):
+        return False
+    expected_run_id = int(start_date.timestamp() * 1000)
+    return abs(run_id - expected_run_id) <= 1000
+
+
+def _is_similar_distance(distance_a, distance_b):
+    if not distance_a or not distance_b:
+        return False
+    tolerance = max(
+        STRAVA_DUPLICATE_DISTANCE_METERS,
+        max(distance_a, distance_b) * STRAVA_DUPLICATE_DISTANCE_RATIO,
+    )
+    return abs(distance_a - distance_b) <= tolerance
 
 
 def _route_length_m(coords):
@@ -171,6 +233,13 @@ class Generator:
         for activity in self.client.get_activities(**filters):
             if self.only_run and activity.type != "Run":
                 continue
+            duplicate = self.find_matching_file_import_activity(activity)
+            if duplicate:
+                print(
+                    "\nSkip Strava duplicate "
+                    f"{activity.id}: matches local activity {duplicate.run_id}"
+                )
+                continue
             if IGNORE_BEFORE_SAVING:
                 if activity.map and activity.map.summary_polyline:
                     activity.map.summary_polyline = filter_out(
@@ -186,6 +255,34 @@ class Generator:
                 sys.stdout.write(".")
             sys.stdout.flush()
         self.session.commit()
+
+    def find_matching_file_import_activity(self, run_activity):
+        try:
+            run_activity_id = int(run_activity.id)
+        except (TypeError, ValueError):
+            return None
+        if self.session.query(Activity).filter_by(run_id=run_activity_id).first():
+            return None
+
+        run_start = _activity_start_date(run_activity.start_date)
+        run_distance = _activity_distance(getattr(run_activity, "distance", None))
+        if run_start is None or run_distance is None:
+            return None
+
+        for activity in self.session.query(Activity).all():
+            if int(activity.run_id) == run_activity_id:
+                continue
+            if not _is_file_imported_activity(activity):
+                continue
+            activity_start = _activity_start_date(activity.start_date)
+            activity_distance = _activity_distance(activity.distance)
+            if activity_start is None or activity_distance is None:
+                continue
+            if abs(run_start - activity_start) > STRAVA_DUPLICATE_TIME_WINDOW:
+                continue
+            if _is_similar_distance(run_distance, activity_distance):
+                return activity
+        return None
 
     def sync_from_data_dir(self, data_dir, file_suffix="gpx", activity_title_dict={}):
         loader = track_loader.TrackLoader()
